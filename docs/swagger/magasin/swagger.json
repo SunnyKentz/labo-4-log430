@@ -608,6 +608,9 @@
                 "status": {
                     "type": "integer"
                 },
+                "success": {
+                    "type": "boolean"
+                },
                 "timestamp": {
                     "type": "string"
                 }
@@ -624,6 +627,9 @@
                 },
                 "status": {
                     "type": "integer"
+                },
+                "success": {
+                    "type": "boolean"
                 },
                 "timestamp": {
                     "type": "string"

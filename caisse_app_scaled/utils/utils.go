@@ -32,7 +32,7 @@ func GetApiError(c *fiber.Ctx, message string, status int) error {
 	case 500:
 		errorMsg = "Internal Server Error"
 	}
-	return c.JSON(models.ApiError{
+	return c.Status(status).JSON(models.ApiError{
 		Timestamp: time.Now(),
 		Status:    status,
 		Error:     errorMsg,
@@ -50,7 +50,7 @@ func GetApiSuccess(c *fiber.Ctx, status int) error {
 	case 201:
 		message = "Created"
 	}
-	return c.JSON(models.ApiSuccess{
+	return c.Status(status).JSON(models.ApiSuccess{
 		Timestamp: time.Now(),
 		Success:   true,
 		Status:    status,

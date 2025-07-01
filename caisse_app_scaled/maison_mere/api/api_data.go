@@ -14,9 +14,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
 	swagger "github.com/gofiber/swagger"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Body struct {
@@ -41,8 +42,9 @@ func newDataApi() *fiber.App {
 	// api mount
 	api := fiber.New(fiber.Config{})
 	api.Get("/swagger/*", swagger.HandlerDefault) // default
-	api.Get("/metrics", prometheusHandler)
-	api.Use(metricsMiddleware)
+	prometheus := fiberprometheus.NewWithRegistry(prometheus.DefaultRegisterer, "httpservice", "mere", "http", nil)
+	prometheus.RegisterAt(api, "/metrics")
+	api.Use(prometheus.Middleware)
 	api.Post("/merelogin", mereloginHandler)
 	api.Post("/login", loginHandler)
 	api.Post("/notify", notifyHandler)
@@ -59,63 +61,6 @@ func newDataApi() *fiber.App {
 	api.Put("/produit", authMiddleWare, updateProductHandler)
 
 	return api
-}
-
-// prometheusHandler handles the /metrics endpoint for Prometheus
-func prometheusHandler(c *fiber.Ctx) error {
-	c.Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
-
-	// Get the prometheus handler and serve metrics directly
-	handler := promhttp.Handler()
-
-	// Create a simple HTTP request
-	req, err := http.NewRequest("GET", "/metrics", nil)
-	if err != nil {
-		return err
-	}
-
-	// Create a response writer that writes to Fiber response
-	writer := &fiberResponseWriter{ctx: c}
-
-	// Serve the prometheus metrics
-	handler.ServeHTTP(writer, req)
-
-	return nil
-}
-
-// fiberResponseWriter implements http.ResponseWriter for Fiber
-type fiberResponseWriter struct {
-	ctx *fiber.Ctx
-}
-
-func (w *fiberResponseWriter) Header() http.Header {
-	return make(http.Header)
-}
-
-func (w *fiberResponseWriter) Write(data []byte) (int, error) {
-	w.ctx.Response().AppendBody(data)
-	return len(data), nil
-}
-
-func (w *fiberResponseWriter) WriteHeader(statusCode int) {
-	w.ctx.Status(statusCode)
-}
-
-// metricsMiddleware records HTTP request metrics
-func metricsMiddleware(c *fiber.Ctx) error {
-	start := time.Now()
-
-	// Process request
-	err := c.Next()
-
-	// Record metrics
-	duration := time.Since(start).Seconds()
-	RecordHTTPRequestDuration(c.Method(), c.Path(), duration)
-
-	status := strconv.Itoa(c.Response().StatusCode())
-	RecordHTTPRequest(c.Method(), c.Path(), status)
-
-	return err
 }
 
 // @Summary Mere Login
@@ -179,14 +124,11 @@ func loginHandler(c *fiber.Ctx) error {
 func notifyHandler(c *fiber.Ctx) error {
 	var b Body
 	if err := c.BodyParser(&b); err != nil {
-		RecordError("invalid_parameter")
+
 		return GetApiError(c, SYNTAX_ERR("body", "json"), http.StatusBadRequest)
 	}
 	println(b.Message)
 	mere.Notifications = append([]string{b.Message}, mere.Notifications...) //enqueue
-
-	// Record notification metric
-	RecordNotification()
 
 	return GetApiSuccess(c, 200)
 }
@@ -203,15 +145,12 @@ func notifyHandler(c *fiber.Ctx) error {
 func subscribeHandler(c *fiber.Ctx) error {
 	var b Body
 	if err := c.BodyParser(&b); err != nil {
-		RecordError("invalid_parameter")
+
 		return GetApiError(c, SYNTAX_ERR("body", "json"), http.StatusBadRequest)
 	}
 	if !slices.Contains(mere.Magasins, b.Host) {
 		mere.Magasins = append(mere.Magasins, b.Host)
 	}
-
-	// Update magasins total metric
-	UpdateMagasinsTotal(len(mere.Magasins))
 
 	return GetApiSuccess(c, 200)
 }
@@ -229,9 +168,6 @@ func alertsHandler(c *fiber.Ctx) error {
 		notifs = append(notifs, Body{Message: v})
 	}
 
-	// Update alerts total metric
-	UpdateAlertsTotal(len(mere.Notifications))
-
 	return c.Status(http.StatusOK).JSON(notifs)
 }
 
@@ -244,19 +180,9 @@ func alertsHandler(c *fiber.Ctx) error {
 // @Router /api/v1/transactions [get]
 func getTransactionsHandler(c *fiber.Ctx) error {
 	if transactions := mere.AfficherTransactions(); transactions != nil {
-		// Record transaction metrics
-		for _, t := range transactions {
-			RecordTransaction()
-			if t.Type == "VENTE" {
-				RecordSale()
-			} else if t.Type == "RETOUR" {
-				RecordRefund()
-			}
-		}
 		return c.JSON(transactions)
 	}
 	logger.Error("transactions is nil")
-	RecordError("database_error")
 	return GetApiError(c, FAILURE_ERR(errors.New("transactions is null")), http.StatusBadRequest)
 }
 
@@ -297,15 +223,10 @@ func createTransactionHandler(c *fiber.Ctx) error {
 	var transaction models.Transaction
 	if err := c.BodyParser(&transaction); err == nil {
 		if err = mere.FaireUneVente(transaction); err == nil {
-			// Record transaction and sale metrics
-			RecordTransaction()
-			RecordSale()
 			return c.Status(http.StatusOK).JSON(transaction)
 		}
-		RecordError("transaction_creation_failed")
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
-	RecordError("invalid_parameter")
 	return GetApiError(c, SYNTAX_ERR("body", "json"), http.StatusBadRequest)
 }
 
@@ -321,16 +242,11 @@ func createTransactionHandler(c *fiber.Ctx) error {
 func deleteTransactionHandler(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		RecordError("invalid_parameter")
 		return GetApiError(c, SYNTAX_ERR("id", id), http.StatusBadRequest)
 	}
 	if err := mere.FaireUnRetour(id); err != nil {
-		RecordError("refund_failed")
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
-
-	// Record refund metric
-	RecordRefund()
 
 	return GetApiSuccess(c, 200)
 }
@@ -344,9 +260,6 @@ func deleteTransactionHandler(c *fiber.Ctx) error {
 // @Router /api/v1/magasins [get]
 func getMagasinsHandler(c *fiber.Ctx) error {
 	magasins := mere.AfficherTousLesMagasins()
-
-	// Update magasins total metric
-	UpdateMagasinsTotal(len(magasins))
 
 	return c.JSON(magasins)
 }

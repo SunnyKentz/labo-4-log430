@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 
+	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
 	swagger "github.com/gofiber/swagger"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // @title Centre Logistique API
@@ -31,9 +31,10 @@ import (
 // @BasePath /api/v1
 func newDataApi() *fiber.App {
 	api := fiber.New(fiber.Config{})
+	prometheus := fiberprometheus.NewWithRegistry(prometheus.DefaultRegisterer, "httpservice", "logistique", "http", nil)
+	prometheus.RegisterAt(api, "/metrics")
+	api.Use(prometheus.Middleware)
 	api.Get("/swagger/*", swagger.HandlerDefault)
-	api.Get("/metrics", prometheusHandler)
-	api.Use(metricsMiddleware)
 	api.Post("/login", loginHandler)
 	api.Get("/commands", authMiddleWare, getAllCommandsHandler)
 	api.Post("/commande/:magasin/:id", createCommandHandler)
@@ -84,10 +85,6 @@ func loginHandler(c *fiber.Ctx) error {
 // @Router /api/v1/commands [get]
 func getAllCommandsHandler(c *fiber.Ctx) error {
 	commands := logistics.GetAllCommands()
-
-	// Update pending commands metric (all commands are considered pending)
-	UpdateCommandsPending(len(commands))
-
 	return c.JSON(commands)
 }
 
@@ -106,7 +103,6 @@ func getAllCommandsHandler(c *fiber.Ctx) error {
 func createCommandHandler(c *fiber.Ctx) error {
 	mag, err := url.QueryUnescape(c.Params("magasin"))
 	if err != nil {
-		RecordError("invalid_parameter")
 		return GetApiError(c, SYNTAX_ERR("magasin", c.Params("magasin")), http.StatusBadRequest)
 	}
 
@@ -114,18 +110,14 @@ func createCommandHandler(c *fiber.Ctx) error {
 		Host string `json:"host"`
 	}
 	if err := c.BodyParser(&body); err != nil {
-		RecordError("invalid_parameter")
 		return GetApiError(c, SYNTAX_ERR("body", "json"), http.StatusBadRequest)
 	}
 	id, err1 := strconv.Atoi(c.Params("id"))
 	if err1 != nil {
-		RecordError("invalid_parameter")
+
 		return GetApiError(c, SYNTAX_ERR("id", c.Params("id")), http.StatusBadRequest)
 	}
 	logistics.AjouterUneCommande(id, mag, body.Host)
-
-	// Record command metric
-	RecordCommand()
 
 	return GetApiSuccess(c, 200)
 }
@@ -142,17 +134,11 @@ func createCommandHandler(c *fiber.Ctx) error {
 func acceptCommandHandler(c *fiber.Ctx) error {
 	id, err1 := strconv.Atoi(c.Params("id"))
 	if err1 != nil {
-		RecordError("invalid_parameter")
 		return GetApiError(c, SYNTAX_ERR("id", c.Params("id")), http.StatusBadRequest)
 	}
 	if ok := logistics.AccepterUneCommande(id); !ok {
-		RecordError("command_accept_failed")
 		return GetApiError(c, FAILURE_ERR(errors.New("failed to accept command")), http.StatusInternalServerError)
 	}
-
-	// Record accepted command metric
-	RecordCommandAccepted()
-
 	return GetApiSuccess(c, 200)
 }
 
@@ -168,16 +154,13 @@ func acceptCommandHandler(c *fiber.Ctx) error {
 func refuseCommandHandler(c *fiber.Ctx) error {
 	id, err1 := strconv.Atoi(c.Params("id"))
 	if err1 != nil {
-		RecordError("invalid_parameter")
+
 		return GetApiError(c, SYNTAX_ERR("id", c.Params("id")), http.StatusBadRequest)
 	}
 	if ok := logistics.RefuserUneCommande(id); !ok {
-		RecordError("command_refuse_failed")
+
 		return GetApiError(c, FAILURE_ERR(errors.New("failed to refuse command")), http.StatusInternalServerError)
 	}
-
-	// Record refused command metric
-	RecordCommandRefused()
 
 	return GetApiSuccess(c, 200)
 }
@@ -255,61 +238,4 @@ func updateProductHandler(c *fiber.Ctx) error {
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
 	return GetApiSuccess(c, 200)
-}
-
-// prometheusHandler handles the /metrics endpoint for Prometheus
-func prometheusHandler(c *fiber.Ctx) error {
-	c.Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
-
-	// Get the prometheus handler and serve metrics directly
-	handler := promhttp.Handler()
-
-	// Create a simple HTTP request
-	req, err := http.NewRequest("GET", "/metrics", nil)
-	if err != nil {
-		return err
-	}
-
-	// Create a response writer that writes to Fiber response
-	writer := &fiberResponseWriter{ctx: c}
-
-	// Serve the prometheus metrics
-	handler.ServeHTTP(writer, req)
-
-	return nil
-}
-
-// fiberResponseWriter implements http.ResponseWriter for Fiber
-type fiberResponseWriter struct {
-	ctx *fiber.Ctx
-}
-
-func (w *fiberResponseWriter) Header() http.Header {
-	return make(http.Header)
-}
-
-func (w *fiberResponseWriter) Write(data []byte) (int, error) {
-	w.ctx.Response().AppendBody(data)
-	return len(data), nil
-}
-
-func (w *fiberResponseWriter) WriteHeader(statusCode int) {
-	w.ctx.Status(statusCode)
-}
-
-// metricsMiddleware records HTTP request metrics
-func metricsMiddleware(c *fiber.Ctx) error {
-	start := time.Now()
-
-	// Process request
-	err := c.Next()
-
-	// Record metrics
-	duration := time.Since(start).Seconds()
-	RecordHTTPRequestDuration(c.Method(), c.Path(), duration)
-
-	status := strconv.Itoa(c.Response().StatusCode())
-	RecordHTTPRequest(c.Method(), c.Path(), status)
-
-	return err
 }

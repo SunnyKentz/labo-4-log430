@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 
+	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
 	swagger "github.com/gofiber/swagger"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // @title Magasin API
@@ -37,8 +37,9 @@ import (
 func newDataApi() *fiber.App {
 	api := fiber.New(fiber.Config{})
 	api.Get("/swagger/*", swagger.HandlerDefault)
-	api.Get("/metrics", prometheusHandler)
-	api.Use(metricsMiddleware)
+	prometheus := fiberprometheus.NewWithRegistry(prometheus.DefaultRegisterer, "httpservice", "magasin", "http", nil)
+	prometheus.RegisterAt(api, "/metrics")
+	api.Use(prometheus.Middleware)
 	api.Post("/login", loginHandler)
 	api.Get("/produits", authMiddleWare, getProductsHandler)
 	api.Get("/produits/:nom", authMiddleWare, findProductHandler)
@@ -52,63 +53,6 @@ func newDataApi() *fiber.App {
 	api.Put("/produit/:id", updateProductHandler)
 	api.Put("/produit/:id/:qt", restockProductHandler)
 	return api
-}
-
-// prometheusHandler handles the /metrics endpoint for Prometheus
-func prometheusHandler(c *fiber.Ctx) error {
-	c.Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
-
-	// Get the prometheus handler and serve metrics directly
-	handler := promhttp.Handler()
-
-	// Create a simple HTTP request
-	req, err := http.NewRequest("GET", "/metrics", nil)
-	if err != nil {
-		return err
-	}
-
-	// Create a response writer that writes to Fiber response
-	writer := &fiberResponseWriter{ctx: c}
-
-	// Serve the prometheus metrics
-	handler.ServeHTTP(writer, req)
-
-	return nil
-}
-
-// fiberResponseWriter implements http.ResponseWriter for Fiber
-type fiberResponseWriter struct {
-	ctx *fiber.Ctx
-}
-
-func (w *fiberResponseWriter) Header() http.Header {
-	return make(http.Header)
-}
-
-func (w *fiberResponseWriter) Write(data []byte) (int, error) {
-	w.ctx.Response().AppendBody(data)
-	return len(data), nil
-}
-
-func (w *fiberResponseWriter) WriteHeader(statusCode int) {
-	w.ctx.Status(statusCode)
-}
-
-// metricsMiddleware records HTTP request metrics
-func metricsMiddleware(c *fiber.Ctx) error {
-	start := time.Now()
-
-	// Process request
-	err := c.Next()
-
-	// Record metrics
-	duration := time.Since(start).Seconds()
-	RecordHTTPRequestDuration(c.Method(), c.Path(), duration)
-
-	status := strconv.Itoa(c.Response().StatusCode())
-	RecordHTTPRequest(c.Method(), c.Path(), status)
-
-	return err
 }
 
 // @Summary Login
@@ -161,11 +105,8 @@ func loginHandler(c *fiber.Ctx) error {
 func getProductsHandler(c *fiber.Ctx) error {
 	produits, err := caissier.AfficherProduits()
 	if err != nil {
-		RecordError("database_error")
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
-	// Update products total metric
-	UpdateProductsTotal(len(produits))
 
 	return c.JSON(produits)
 }
@@ -210,17 +151,12 @@ func addToCartHandler(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		RecordError("invalid_parameter")
 		return GetApiError(c, SYNTAX_ERR("id", idParam), http.StatusBadRequest)
 	}
 	err = caissier.AjouterALaCart(id)
 	if err != nil {
-		RecordError("product_not_found")
 		return GetApiError(c, NOTFOUND_ERR("id", id), http.StatusNotFound)
 	}
-
-	// Record cart operation metric
-	RecordCartOperation("add")
 
 	return GetApiSuccess(c, 200)
 }
@@ -258,13 +194,9 @@ func removeFromCartHandler(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		RecordError("invalid_parameter")
 		return GetApiError(c, SYNTAX_ERR("id", idParam), http.StatusBadRequest)
 	}
 	caissier.RetirerDeLaCart(id)
-
-	// Record cart operation metric
-	RecordCartOperation("remove")
 
 	return GetApiSuccess(c, 200)
 }
@@ -283,13 +215,8 @@ func makeSaleHandler(c *fiber.Ctx) error {
 	err := caissier.FaireUneVente()
 	caissier.ViderLaCart()
 	if err != nil {
-		RecordError("sale_failed")
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
-
-	// Record transaction and sale metrics
-	RecordTransaction()
-	RecordSale()
 
 	return GetApiSuccess(c, 200)
 }
@@ -328,19 +255,13 @@ func refundTransactionHandler(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		RecordError("invalid_parameter")
 		return GetApiError(c, SYNTAX_ERR("id", idParam), http.StatusBadRequest)
 	}
 
 	err = caissier.FaireUnRetour(id)
 	if err != nil {
-		RecordError("refund_failed")
 		return GetApiError(c, NOTFOUND_ERR("id", id), http.StatusNotFound)
 	}
-
-	// Record refund metric
-	RecordRefund()
-
 	return GetApiSuccess(c, 200)
 }
 
