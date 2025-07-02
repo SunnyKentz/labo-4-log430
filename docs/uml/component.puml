@@ -17,6 +17,11 @@ rectangle "External Services" {
     component "Docker Hub" <<Registry>> as hub
 }
 
+rectangle "Monitoring Stack" {
+    component "Prometheus" <<Metrics Collector>> as prometheus
+    component "Grafana" <<Dashboard>> as grafana
+}
+
 ' Server side connections
 [docker] -- [pg] : <<hosts>>
 [fiber] -- [orm] : <<uses>>
@@ -28,5 +33,10 @@ rectangle "External Services" {
 
 ' External connections
 [docker] -- [hub] : <<pulls from>>
+
+' Monitoring connections
+[fiber] -- [prometheus] : <<exposes metrics>>
+[prometheus] -- [grafana] : <<provides data>>
+[bs] -- [grafana] : <<accesses dashboards>>
 
 @enduml
