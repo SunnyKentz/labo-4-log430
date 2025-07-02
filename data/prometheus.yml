@@ -4,15 +4,15 @@ global:
 scrape_configs:
   - job_name: 'magasin'
     static_configs:
-      - targets: ['magasin:8080']
+      - targets: ['magasin.localhost']
     metrics_path: /api/v1/metrics
 
   - job_name: 'mere'
     static_configs:
-      - targets: ['mere:8090']
+      - targets: ['mere.localhost']
     metrics_path: /api/v1/metrics
 
   - job_name: 'logistique'
     static_configs:
-      - targets: ['logistique:8091']
+      - targets: ['logistique.localhost']
     metrics_path: /api/v1/metrics 

@@ -14,7 +14,7 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:8091",
+    "host": "logistique.localhost",
     "paths": {
         "/api/v1/commande/{id}": {
             "put": {

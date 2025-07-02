@@ -22,7 +22,7 @@ import (
 // @contact.email fiber@swagger.io
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host localhost:8090
+// @host mere.localhost
 // @BasePath /api/v1
 func NewApp() {
 

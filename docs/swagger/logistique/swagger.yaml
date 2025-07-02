@@ -55,7 +55,7 @@ definitions:
       quantite:
         type: integer
     type: object
-host: localhost:8091
+host: logistique.localhost
 info:
   contact:
     email: fiber@swagger.io

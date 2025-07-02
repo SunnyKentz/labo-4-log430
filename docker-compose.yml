@@ -1,33 +1,55 @@
 services:
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    command:
+      - --api.insecure=true
+      - --providers.docker=true
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+      - "8081:8080" # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   magasin:
     build:
       context: .
       dockerfile: ./caisse_app_scaled/magasin/Dockerfile
     image: ${USERNAME}/caisse-app-magasin:latest
-    ports:
-      - "8080:8080"
     depends_on:
       - dbmagasin
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.magasin.rule=Host(`magasin.localhost`)"
+      - "traefik.http.services.magasin.loadbalancer.server.port=8080"
 
   logistique:
     build:
       context: .
       dockerfile: ./caisse_app_scaled/centre_logistique/Dockerfile
     image: ${USERNAME}/caisse-app-logistique:latest
-    ports:
-      - "8091:8091"
     depends_on:
       - dblogistique
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.logistique.rule=Host(`logistique.localhost`)"
+      - "traefik.http.services.logistique.loadbalancer.server.port=8091"
 
   mere:
     build:
       context: .
       dockerfile: ./caisse_app_scaled/maison_mere/Dockerfile
     image: ${USERNAME}/caisse-app-mere:latest
-    ports:
-      - "8090:8090"
     depends_on:
       - dbMere
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mere.rule=Host(`mere.localhost`)"
+      - "traefik.http.services.mere.loadbalancer.server.port=8090"
 
   dbmagasin:
     image: postgres:15
@@ -67,7 +89,6 @@ services:
     volumes:
       - postgres_data_mere:/var/lib/postgresql/data
       - ./data/initMere.sql:/docker-entrypoint-initdb.d/initMere.sql
-
 
   prometheus:
     image: prom/prometheus:latest

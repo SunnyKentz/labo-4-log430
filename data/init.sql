@@ -117,16 +117,3 @@ INSERT INTO produits (nom, prix, description, categorie, quantite) VALUES
 ('Coton-tiges x200', 2.00, 'Boîte de 200 coton-tiges', 'Hygiène', 11),
 ('Lingettes nettoyantes x20', 2.50, 'Paquet de 20 lingettes nettoyantes', 'Hygiène', 6);
 
-CREATE TABLE IF NOT EXISTS magasins (
-    id SERIAL PRIMARY KEY,
-    nom VARCHAR(100) NOT NULL,
-    region VARCHAR(100) NOT NULL,
-    server VARCHAR(100) NOT NULL
-);
-
-INSERT INTO magasins (nom, region, server) VALUES
-('Magasin 1', 'Nord', 'localhost:8080'),
-('Magasin 2', 'Sud', 'localhost:8081'),
-('Magasin 3', 'Est', 'localhost:8082'),
-('Magasin 4', 'Ouest', 'localhost:8083'),
-('Magasin 5', 'Centre', 'localhost:8084');
