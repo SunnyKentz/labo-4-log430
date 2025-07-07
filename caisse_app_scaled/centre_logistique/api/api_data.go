@@ -69,7 +69,7 @@ func loginHandler(c *fiber.Ctx) error {
 	pw := requestBody.Password
 	jwt, err := logistics.Login(employe, pw)
 	if err != nil {
-		return GetApiError(c, "Failed to login", http.StatusForbidden)
+		return GetApiError(c, FAILURE_ERR(err), http.StatusForbidden)
 	}
 	return c.Status(200).JSON(fiber.Map{
 		"token": jwt,

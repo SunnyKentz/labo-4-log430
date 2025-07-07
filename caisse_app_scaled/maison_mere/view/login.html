@@ -71,7 +71,7 @@
                         password: document.getElementById("password").value,
                     };
 
-                    fetch("/api/v1/merelogin", {
+                    fetch("/mere/api/v1/merelogin", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -91,7 +91,7 @@
                             console.log("JWT saved to localStorage");
 
                             // Redirect to home page
-                            window.location.href = "/home";
+                            window.location.href = "/mere/home";
                         })
                         .catch((error) => {
                             console.error("Login error:", error);
@@ -106,7 +106,7 @@
                     loginAsButton.textContent = `Login as ${user}`;
                     loginAsButton.className = "btn btn-secondary w-100 mt-2";
                     loginAsButton.addEventListener("click", function () {
-                        window.location.href = "/home";
+                        window.location.href = "/mere/home";
                     });
                     submitButton.insertAdjacentElement(
                         "afterend",

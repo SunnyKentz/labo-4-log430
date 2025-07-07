@@ -1,8 +1,8 @@
 package auth
 
 import (
+	"caisse-app-scaled/caisse_app_scaled/logger"
 	. "caisse-app-scaled/caisse_app_scaled/utils"
-	"log"
 	"net/http"
 )
 
@@ -21,7 +21,7 @@ func IsUsernameValid(nom string) bool {
 		"role":     {"commis"},
 	})
 	if err != nil {
-		log.Println("Erreur lors de la connexion: " + err.Error())
+		logger.Error("Erreur lors de la connexion: " + err.Error())
 		return false
 	}
 	defer resp.Body.Close()

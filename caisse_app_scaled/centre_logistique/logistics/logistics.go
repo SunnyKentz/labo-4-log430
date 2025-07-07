@@ -30,10 +30,11 @@ func Nom() (string, error) {
 }
 
 func Login(n string, pw string) (string, error) {
-	if auth.IsUsernameValid(nom) && auth.IsUserPasswordValid(nom, pw) {
-		return auth.CreateJWT(nom)
+	nom = n
+	if auth.IsUsernameValid(n) && auth.IsUserPasswordValid(n, pw) {
+		return auth.CreateJWT(n)
 	}
-	return "", errors.New("failed to login")
+	return "", errors.New("failed to login with " + n)
 }
 
 func CheckLogedIn(jwt string) error {
@@ -65,7 +66,7 @@ func AccepterUneCommande(id int) bool {
 		if cmd.Id == id {
 			err := db.MettreAJourQuantite(cmd.ProduitID, -10)
 			Errnotnil(err)
-			req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("http://%s/api/v1/produit/%d/%d", cmd.Host, cmd.ProduitID, 10), nil)
+			req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/api/v1/produit/%d/%d", API_MAGASIN(), cmd.ProduitID, 10), nil)
 			if err != nil {
 				logger.Error("Erreur lors de la création de la requête: " + err.Error())
 				return false
@@ -111,6 +112,7 @@ func MiseAJourProduit(produitID int, nom string, prix float64, description strin
 	if err != nil {
 		return errors.New("produit not found")
 	}
+	oldnom := produit.Nom
 	produit.Nom = nom
 	produit.Prix = prix
 	produit.Description = description
@@ -118,5 +120,6 @@ func MiseAJourProduit(produitID int, nom string, prix float64, description strin
 		logger.Error(err.Error())
 		return err
 	}
+	logger.Info("Produit " + oldnom + " mise a jours ")
 	return nil
 }

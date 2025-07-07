@@ -268,40 +268,59 @@ func TrouverProduit(nom string) ([]models.Produit, error) {
 
 func MiseAJourProduit(id int, nom string, prix float64, description string) error {
 	// for each mere.Magasins, post to maagsin PUT /produit/:id body : {"nom":nom,"prix":prix,"description":description}
-	for _, magasin := range Magasins {
-		// Create request body
-		body := map[string]interface{}{
-			"nom":         nom,
-			"prix":        prix,
-			"description": description,
-		}
 
-		jsonData, err := json.Marshal(body)
-		if err != nil {
-			logger.Error("Erreur lors de la sérialisation: " + err.Error())
-			continue
-		}
+	// Create request body
+	body := map[string]interface{}{
+		"nom":         nom,
+		"prix":        prix,
+		"description": description,
+	}
 
-		// Send PUT request to each magasin
-		req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/api/v1/produit/%d", magasin, id), bytes.NewBuffer(jsonData))
-		if err != nil {
-			logger.Error("Erreur lors de la création de la requête: " + err.Error())
-			continue
-		}
+	jsonData, err := json.Marshal(body)
+	if err != nil {
+		logger.Error("Erreur lors de la sérialisation: " + err.Error())
+		return errors.New("Erreur lors de la sérialisation: " + err.Error())
+	}
 
-		req.Header.Set("Content-Type", "application/json")
+	// Send PUT request to each magasin
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/api/v1/produit/%d", API_MAGASIN(), id), bytes.NewBuffer(jsonData))
+	if err != nil {
+		logger.Error("Erreur lors de la création de la requête: " + err.Error())
+		return errors.New("Erreur lors de la création de la requête: " + err.Error())
+	}
+	req.Header.Set("Content-Type", "application/json")
 
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			logger.Error("Erreur lors de l'envoi de la requête: " + err.Error())
-			continue
-		}
-		defer resp.Body.Close()
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Error("Erreur lors de l'envoi de la requête: " + err.Error())
+		return errors.New("Erreur lors de l'envoi de la requête: " + err.Error())
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		logger.Error(fmt.Sprintf("Erreur lors de la mise à jour du produit dans %s, status: %d", API_LOGISTIC(), resp.StatusCode))
+		return errors.New("erreur lors de la mise à jour du produit")
+	}
 
-		if resp.StatusCode != http.StatusOK {
-			logger.Error(fmt.Sprintf("Erreur lors de la mise à jour du produit dans %s, status: %d", magasin, resp.StatusCode))
-		}
+	// Send PUT request to logistique
+	req, err = http.NewRequest(http.MethodPut, fmt.Sprintf("%s/api/v1/produit/%d", API_LOGISTIC(), id), bytes.NewBuffer(jsonData))
+	if err != nil {
+		logger.Error("Erreur lors de la création de la requête: " + err.Error())
+		return errors.New("Erreur lors de la création de la requête: " + err.Error())
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client = &http.Client{}
+	resp2, err := client.Do(req)
+	if err != nil {
+		logger.Error("Erreur lors de l'envoi de la requête: " + err.Error())
+		return errors.New("Erreur lors de l'envoi de la requête: " + err.Error())
+	}
+	defer resp2.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Error(fmt.Sprintf("Erreur lors de la mise à jour du produit dans %s, status: %d", API_MAGASIN(), resp.StatusCode))
+		return errors.New("erreur lors de la mise à jour du produit")
 	}
 
 	return nil

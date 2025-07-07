@@ -28,30 +28,11 @@ var Host string
 
 func InitialiserPOS(nom string, nomCaisse string, magasin string) bool {
 	logger.Init(nom)
-	// subscribe to mere, POST {"host":Host} to API_MERE/subscribe
-	subscribeData := map[string]string{"host": "http://" + Host}
-	jsonData, err := json.Marshal(subscribeData)
-	if err != nil {
-		logger.Error("Erreur lors de la sérialisation des données: " + err.Error())
-		return false
-	}
-
-	resp, err := http.Post(API_MERE()+"/api/v1/subscribe", "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		logger.Error("Erreur lors de la souscription à la mère: " + err.Error())
-		return false
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		logger.Error("Erreur lors de la notification à la mère, status: " + fmt.Sprint(resp.StatusCode))
-		return false
-	}
-
 	once.Do(func() {
 		db.Init()
-		db.SetupLog()
 	})
+
+	db.SetupLog()
 	available := db.GetCaissier(nomCaisse)
 	if !available {
 		log.Print("Erreur: la Caisse n'existe pas ou est occupé :" + nomCaisse)

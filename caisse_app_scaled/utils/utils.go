@@ -32,6 +32,7 @@ func GetApiError(c *fiber.Ctx, message string, status int) error {
 	case 500:
 		errorMsg = "Internal Server Error"
 	}
+	logger.Error(message)
 	return c.Status(status).JSON(models.ApiError{
 		Timestamp: time.Now(),
 		Status:    status,
@@ -59,9 +60,24 @@ func GetApiSuccess(c *fiber.Ctx, status int) error {
 	})
 }
 
-func API_MAGASIN() string  { return "http://" + os.Getenv("GATEWAY") + ":8080" }
-func API_MERE() string     { return "http://" + os.Getenv("GATEWAY") + ":8090" }
-func API_LOGISTIC() string { return "http://" + os.Getenv("GATEWAY") + ":8091" }
+func API_MAGASIN() string {
+	if os.Getenv("ENVTEST") == "TRUE" {
+		return "http://" + os.Getenv("GATEWAY") + ":8080/magasin"
+	}
+	return "http://" + os.Getenv("GATEWAY") + "/magasin"
+}
+func API_MERE() string {
+	if os.Getenv("ENVTEST") == "TRUE" {
+		return "http://" + os.Getenv("GATEWAY") + ":8090/mere"
+	}
+	return "http://" + os.Getenv("GATEWAY") + "/mere"
+}
+func API_LOGISTIC() string {
+	if os.Getenv("ENVTEST") == "TRUE" {
+		return "http://" + os.Getenv("GATEWAY") + ":8091/logistique"
+	}
+	return "http://" + os.Getenv("GATEWAY") + "/logistique"
+}
 
 func Errnotnil(err error) {
 	if err != nil {

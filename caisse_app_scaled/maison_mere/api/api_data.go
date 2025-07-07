@@ -107,7 +107,7 @@ func loginHandler(c *fiber.Ctx) error {
 	employe := c.FormValue("username")
 	role := c.FormValue("role")
 	if !mere.Login(employe, role) {
-		return GetApiError(c, "this action requires authentification", http.StatusUnauthorized)
+		return GetApiError(c, "failed to auth "+employe+" role:"+role, http.StatusUnauthorized)
 	}
 	return GetApiSuccess(c, 200)
 }

@@ -1,6 +1,10 @@
 {
   "scripts": {
-    "start":"node test.js"
+    "start":"node test.js 1",
+    "15":"node test.js 15",
+    "30":"node test.js 30",
+    "upd":"node miseAJour.js",
+    "rapport":"node raport.js"
   },
   "dependencies": {
     "node-fetch": "^3.3.2"

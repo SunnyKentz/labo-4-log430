@@ -67,7 +67,7 @@ clean:
 	docker stop $$(docker ps -a -q) || true
 	docker rm $$(docker ps -a -q) || true
 # docker image rm $$(docker image ls -q) || true
-# docker volume rm $$(docker volume ls -q) || true
+#docker volume rm $$(docker volume ls -q) || true
 
 dev-setup:
 	echo $(PWD) | docker login -u $(USERNAME) --password-stdin

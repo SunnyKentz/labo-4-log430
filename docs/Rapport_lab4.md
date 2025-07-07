@@ -20,13 +20,13 @@ J'ai créé mon propre outil sous `tests/loadtests/test.js`. Cet outil me permet
 Mon application fonctionne bien à 1 RPS (requête par seconde) mais tombe en défaillance à 30 RPS. Le nombre de requêtes sur le service logistique est considérablement plus élevé que les autres à cause des rapports consolidés.
 
 ### ici on peut voir que le système est stable à 1rps
-![ScreenShot Swagger](./imgs/1rps.png)
+![ScreenShot Graphana](./imgs/1rps.png)
 
 ### le service logistique tombe en premier en retournans des erreurs de la base donnée à 30rps
-![ScreenShot Swagger](./imgs/30rps.png)
+![ScreenShot Graphana](./imgs/30rps.png)
 
 ### ensuite à 100rps je perd la connection ssh et la base de donner mere tombe
-![ScreenShot Swagger](./imgs/100rps.png)
+![ScreenShot Graphana](./imgs/100rps.png)
 
 #### Analysez les points faibles de l’architecture:
 
@@ -35,3 +35,35 @@ Mon application fonctionne bien à 1 RPS (requête par seconde) mais tombe en d�
 3. il fau aussi cache les résultat de la db quand on liste les transactions pour la base de donne mere
 
 ## Ajout d’un Load Balancer et résilience
+
+J'ai décidé d'utiliser Traefik pour mon load balancing car, traefik est plus récent et est construit avec go and se configure sur docker-compose facilement. et l'orchestration via Docker Compose.
+
+#### Analyse par nombre d:instance :
+Je decide de scale avec un nombre N le service de logistique car ce service est celui qui reçois le plus de requête
+
+
+#### N = 1 instance
+
+| RPS = 1 | RPS = 15 | RPS = 30 |
+|---------|----------|----------|
+| ![ScreenShot Graphana](./imgs/1rps-load.png) | 120ms | 250ms |
+
+#### N = 2 instances
+
+| Métrique | RPS = 1 | RPS = 15 | RPS = 30 |
+|----------|---------|----------|----------|
+| Résultas : | 42ms | 85ms | 180ms |
+
+#### N = 3 instances
+
+| Métrique | RPS = 1 | RPS = 15 | RPS = 30 |
+|----------|---------|----------|----------|
+| Résultas : | 40ms | 70ms | 140ms |
+
+#### N = 4 instances
+
+| Métrique | RPS = 1 | RPS = 15 | RPS = 30 |
+|----------|---------|----------|----------|
+| Résultas : | 38ms | 65ms | 120ms |
+
+

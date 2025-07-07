@@ -14,16 +14,6 @@ import (
 	"github.com/gofiber/template/html/v2"
 )
 
-// @title Maison Mere API
-// @version 1.0
-// @description This is the API for the Maison Mere service.
-// @termsOfService http://swagger.io/terms/
-// @contact.name API Support
-// @contact.email fiber@swagger.io
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host mere.localhost
-// @BasePath /api/v1
 func NewApp() {
 
 	engine := html.New("./view", ".html")
@@ -35,7 +25,7 @@ func NewApp() {
 			return false
 		},
 	}))
-
+	app.Use(loadBalancerMiddlerWare)
 	app.Static("/static", "./view")
 	app.Static("/js", "./commonjs")
 	app.Mount("/api/v1", newDataApi())
@@ -59,6 +49,16 @@ func NewApp() {
 	logger.Init("Mere")
 	db.SetupLog()
 	log.Fatal(app.Listen(":8090"))
+}
+
+func loadBalancerMiddlerWare(c *fiber.Ctx) error {
+	path := c.Path()
+	if strings.HasPrefix(path, "/mere") {
+		p := strings.TrimPrefix(path, "/mere")
+		p = strings.TrimPrefix(p, "/")
+		c.Path("/" + p)
+	}
+	return c.Next()
 }
 
 func authMiddleWare(c *fiber.Ctx) error {

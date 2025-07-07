@@ -25,7 +25,7 @@ func NewApp() {
 			return false
 		},
 	}))
-
+	app.Use(loadBalancerMiddlerWare)
 	app.Static("/static", "./view")
 	app.Static("/js", "./commonjs")
 	app.Mount("/api/v1", newDataApi())
@@ -40,7 +40,15 @@ func NewApp() {
 	db.SetupLog()
 	log.Fatal(app.Listen(":8091"))
 }
-
+func loadBalancerMiddlerWare(c *fiber.Ctx) error {
+	path := c.Path()
+	if strings.HasPrefix(path, "/logistique") {
+		p := strings.TrimPrefix(path, "/logistique")
+		p = strings.TrimPrefix(p, "/")
+		c.Path("/" + p)
+	}
+	return c.Next()
+}
 func authMiddleWare(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	err := logistics.CheckLogedIn(authHeader)

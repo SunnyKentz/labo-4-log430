@@ -6,7 +6,6 @@ import (
 	. "caisse-app-scaled/caisse_app_scaled/utils"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,10 +25,10 @@ func NewApp() {
 		},
 	}))
 
+	app.Use(loadBalancerMiddlerWare)
 	app.Static("/static", "./view")
 	app.Static("/js", "./commonjs")
 	app.Mount("/api/v1", newDataApi())
-
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.Render("login", fiber.Map{
 			"Title": "Login - Caisse App",
@@ -47,9 +46,19 @@ func NewApp() {
 	})
 
 	port := ":8080"
-	caissier.Host = os.Getenv("GATEWAY") + port
 	logger.Init("Magasin")
+	caissier.InitialiserPOS("init", "Caisse 1", "NO MAGASIN")
 	log.Fatal(app.Listen(port))
+}
+
+func loadBalancerMiddlerWare(c *fiber.Ctx) error {
+	path := c.Path()
+	if strings.HasPrefix(path, "/magasin") {
+		p := strings.TrimPrefix(path, "/magasin")
+		p = strings.TrimPrefix(p, "/")
+		c.Path("/" + p)
+	}
+	return c.Next()
 }
 
 func authMiddleWare(c *fiber.Ctx) error {

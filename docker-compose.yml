@@ -4,10 +4,10 @@ services:
     container_name: traefik
     command:
       - --api.insecure=true
-      - --providers.docker=true
-      - --entrypoints.web.address=:80
+      - --providers.docker
     ports:
       - "80:80"
+      - "8082:80"
       - "8081:8080" # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -21,8 +21,7 @@ services:
       - dbmagasin
       - traefik
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.magasin.rule=Host(`magasin.localhost`)"
+      - "traefik.http.routers.magasin.rule=(Host(`localhost`) || Host(`172.17.0.1`)) && PathPrefix(`/magasin`)"
       - "traefik.http.services.magasin.loadbalancer.server.port=8080"
 
   logistique:
@@ -34,8 +33,7 @@ services:
       - dblogistique
       - traefik
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.logistique.rule=Host(`logistique.localhost`)"
+      - "traefik.http.routers.logistique.rule=(Host(`localhost`) || Host(`172.17.0.1`)) && PathPrefix(`/logistique`)"
       - "traefik.http.services.logistique.loadbalancer.server.port=8091"
 
   mere:
@@ -47,8 +45,7 @@ services:
       - dbMere
       - traefik
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.mere.rule=Host(`mere.localhost`)"
+      - "traefik.http.routers.mere.rule=(Host(`localhost`) || Host(`172.17.0.1`)) && PathPrefix(`/mere`)"
       - "traefik.http.services.mere.loadbalancer.server.port=8090"
 
   dbmagasin:
@@ -63,6 +60,8 @@ services:
     volumes:
       - postgres_data_magasin:/var/lib/postgresql/data
       - ./data/initMagasin.sql:/docker-entrypoint-initdb.d/initMagasin.sql
+    labels:
+      - traefik.enable=false
 
   dblogistique:
     image: postgres:15
@@ -76,6 +75,8 @@ services:
     volumes:
       - postgres_data_logistique:/var/lib/postgresql/data
       - ./data/initLogistique.sql:/docker-entrypoint-initdb.d/initLogistique.sql
+    labels:
+      - traefik.enable=false
 
   dbMere:
     image: postgres:15
@@ -89,6 +90,8 @@ services:
     volumes:
       - postgres_data_mere:/var/lib/postgresql/data
       - ./data/initMere.sql:/docker-entrypoint-initdb.d/initMere.sql
+    labels:
+      - traefik.enable=false
 
   prometheus:
     image: prom/prometheus:latest
@@ -103,6 +106,8 @@ services:
       - magasin
       - logistique
       - mere
+    labels:
+      - traefik.enable=false
 
   grafana:
     image: grafana/grafana:latest
@@ -116,6 +121,8 @@ services:
       - prometheus
     volumes:
       - grafana_data:/var/lib/grafana
+    labels:
+      - traefik.enable=false
 
   # dbtest:
   #   image: postgres:15
