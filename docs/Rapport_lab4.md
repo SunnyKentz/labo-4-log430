@@ -40,30 +40,29 @@ J'ai décidé d'utiliser Traefik pour mon load balancing car, traefik est plus r
 
 #### Analyse par nombre d:instance :
 Je decide de scale avec un nombre N le service de logistique car ce service est celui qui reçois le plus de requête
-
+Dans ces testes je perd la connection ssh à 30 rps
 
 #### N = 1 instance
 
 | RPS = 1 | RPS = 15 | RPS = 30 |
 |---------|----------|----------|
-| ![ScreenShot Graphana](./imgs/1rps-load.png) | 120ms | 250ms |
+| ![ScreenShot Graphana](./imgs/1rps-load.png) | ![ScreenShot Graphana](./imgs/15rps-load.png) | ![ScreenShot Graphana](./imgs/30rps-load.png) |
 
 #### N = 2 instances
 
-| Métrique | RPS = 1 | RPS = 15 | RPS = 30 |
-|----------|---------|----------|----------|
-| Résultas : | 42ms | 85ms | 180ms |
+| RPS = 1 | RPS = 15 | RPS = 30 |
+|---------|----------|----------|
+| ![ScreenShot Graphana](./imgs/1rps-load-2.png) | ![ScreenShot Graphana](./imgs/15rps-load-2.png) | ![ScreenShot Graphana](./imgs/30rps-load-2.png) |
 
 #### N = 3 instances
 
-| Métrique | RPS = 1 | RPS = 15 | RPS = 30 |
-|----------|---------|----------|----------|
-| Résultas : | 40ms | 70ms | 140ms |
+| RPS = 1 | RPS = 15 | RPS = 30 |
+|---------|----------|----------|
+| ![ScreenShot Graphana](./imgs/1rps-load-3.png) | ![ScreenShot Graphana](./imgs/15rps-load-3.png) | ![ScreenShot Graphana](./imgs/30rps-load-3.png) |
 
 #### N = 4 instances
 
-| Métrique | RPS = 1 | RPS = 15 | RPS = 30 |
-|----------|---------|----------|----------|
-| Résultas : | 38ms | 65ms | 120ms |
-
+| RPS = 1 | RPS = 15 | RPS = 30 |
+|---------|----------|----------|
+| ![ScreenShot Graphana](./imgs/1rps-load-4.png) | ![ScreenShot Graphana](./imgs/15rps-load-4.png) | ![ScreenShot Graphana](./imgs/30rps-load-4.png) |
 
