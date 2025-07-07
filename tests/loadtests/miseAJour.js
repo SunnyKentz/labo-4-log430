@@ -1,10 +1,12 @@
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const axios = require('axios');
 let magasin = 'Magasin 1';
 let caisse = 'Caisse 1';
-loadTestMiseAJour()
+
+loadTestMiseAJour();
+
 async function loadTestMiseAJour() {
     //  Mise à jour de produits à forte fréquence. 
-    let token = await loginAndGetToken('http://localhost/mere/api/v1/merelogin', magasin, caisse)
+    let token = await loginAndGetToken('http://localhost:61867/mere/api/v1/merelogin', magasin, caisse);
 
     const productData = {
         productId: 5,
@@ -13,11 +15,20 @@ async function loadTestMiseAJour() {
         description: "description",
     };
 
-    fetch('http://localhost/mere/api/v1/produit', {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(productData),
-    });
+    try {
+        await axios.put(
+            'http://localhost:61867/mere/api/v1/produit',
+            productData,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+    } catch (err) {
+        console.error('Error during product update:', err.message);
+    }
 }
 
 async function loginAndGetToken(loginEndpoint, magasin, caisse) {
@@ -28,15 +39,10 @@ async function loginAndGetToken(loginEndpoint, magasin, caisse) {
         caisse: caisse
     };
     try {
-        const res = await fetch(loginEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(loginPayload)
+        const res = await axios.post(loginEndpoint, loginPayload, {
+            headers: { 'Content-Type': 'application/json' }
         });
-        if (!res.ok) {
-            throw new Error(`Login failed: ${res.status} ${res.statusText}`);
-        }
-        const data = await res.json();
+        const data = res.data;
         return data.token || data.access_token || null;
     } catch (err) {
         console.error('Error during login:', err.message, loginEndpoint);

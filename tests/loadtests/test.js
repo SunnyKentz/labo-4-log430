@@ -1,4 +1,4 @@
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const axios = require('axios');
 let magasin = 'Magasin 1';
 let caisse = 'Caisse 1';
 
@@ -16,38 +16,36 @@ function main() {
 async function loadTestConsultation(requestsPerSecond) {
     // Consultation simultanée des stocks de plusieurs magasins.
     let initial = requestsPerSecond
-    let token = await loginAndGetToken('http://localhost:55383/magasin/api/v1/login', magasin, caisse)
+    let token = await loginAndGetToken('http://localhost:57463/magasin/api/v1/login', magasin, caisse)
     setInterval(() => {
-        while (requestsPerSecond > 0) {
-            fetch('http://localhost:55383/magasin/api/v1/produits', {
-                method: 'GET',
+        let count = requestsPerSecond;
+        while (count > 0) {
+            axios.get('http://localhost:57463/magasin/api/v1/produits', {
                 headers: { 'Authorization': `Bearer ${token}`, 'C-Mag': magasin, 'C-Caisse': caisse }
-            })
-            requestsPerSecond--;
+            }).catch(() => {});
+            count--;
         }
-        requestsPerSecond = initial;
     }, 1000);
 }
 
 async function loadTestRapport(requestsPerSecond) {
     //  Génération de rapports consolidés.
-    let token = await loginAndGetToken('http://localhost:55383/mere/api/v1/merelogin', magasin, caisse)
+    let token = await loginAndGetToken('http://localhost:57463/mere/api/v1/merelogin', magasin, caisse)
     let initial = requestsPerSecond
     setInterval(() => {
-        while (requestsPerSecond > 0) {
-            fetch('http://localhost:55383/mere/api/v1/raport', {
-                method: 'GET',
+        let count = requestsPerSecond;
+        while (count > 0) {
+            axios.get('http://localhost:57463/mere/api/v1/raport', {
                 headers: { 'Authorization': `Bearer ${token}` }
-            })
-            requestsPerSecond--;
+            }).catch(() => {});
+            count--;
         }
-        requestsPerSecond = initial;
     }, 1000);
 }
 
 async function loadTestMiseAJour(requestsPerSecond) {
     //  Mise à jour de produits à forte fréquence. 
-    let token = await loginAndGetToken('http://localhost:55383/mere/api/v1/merelogin', magasin, caisse)
+    let token = await loginAndGetToken('http://localhost:57463/mere/api/v1/merelogin', magasin, caisse)
     let initial = requestsPerSecond
     const productData = {
         productId: 5,
@@ -56,15 +54,13 @@ async function loadTestMiseAJour(requestsPerSecond) {
         description: "description",
     };
     setInterval(() => {
-        while (requestsPerSecond > 0) {
-            fetch('http://localhost:55383/mere/api/v1/produit', {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`,"Content-Type": "application/json" },
-                body: JSON.stringify(productData),
-            })
-            requestsPerSecond--;
+        let count = requestsPerSecond;
+        while (count > 0) {
+            axios.put('http://localhost:57463/mere/api/v1/produit', productData, {
+                headers: { 'Authorization': `Bearer ${token}`,"Content-Type": "application/json" }
+            }).catch(() => {});
+            count--;
         }
-        requestsPerSecond = initial;
     }, 1000);
 }
 
@@ -76,15 +72,10 @@ async function loginAndGetToken(loginEndpoint, magasin, caisse) {
         caisse: caisse
     };
     try {
-        const res = await fetch(loginEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(loginPayload)
+        const res = await axios.post(loginEndpoint, loginPayload, {
+            headers: { 'Content-Type': 'application/json' }
         });
-        if (!res.ok) {
-            throw new Error(`Login failed: ${res.status} ${res.statusText}`);
-        }
-        const data = await res.json();
+        const data = res.data;
         return data.token || data.access_token || null;
     } catch (err) {
         console.error('Error during login:', err.message,loginEndpoint);
