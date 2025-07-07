@@ -43,7 +43,7 @@ func GetApiError(c *fiber.Ctx, message string, status int) error {
 	})
 }
 
-func GetApiSuccess(c *fiber.Ctx, status int) error {
+func GetApiSuccess(cache map[string]any, c *fiber.Ctx, status int) error {
 	message := ""
 	switch status {
 	case 200:
@@ -51,13 +51,17 @@ func GetApiSuccess(c *fiber.Ctx, status int) error {
 	case 201:
 		message = "Created"
 	}
-	return c.Status(status).JSON(models.ApiSuccess{
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = models.ApiSuccess{
 		Timestamp: time.Now(),
 		Success:   true,
 		Status:    status,
 		Message:   message,
 		Path:      c.Route().Path,
-	})
+	}
+	return c.Status(status).JSON(cache[path].(models.ApiSuccess))
 }
 
 func API_MAGASIN() string {

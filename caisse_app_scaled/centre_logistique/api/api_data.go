@@ -3,6 +3,7 @@ package api
 import (
 	"caisse-app-scaled/caisse_app_scaled/centre_logistique/logistics"
 	. "caisse-app-scaled/caisse_app_scaled/utils"
+	"time"
 
 	_ "caisse-app-scaled/docs/swagger/logistique"
 	"errors"
@@ -119,7 +120,7 @@ func createCommandHandler(c *fiber.Ctx) error {
 	}
 	logistics.AjouterUneCommande(id, mag, body.Host)
 
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Accept Command
@@ -139,7 +140,7 @@ func acceptCommandHandler(c *fiber.Ctx) error {
 	if ok := logistics.AccepterUneCommande(id); !ok {
 		return GetApiError(c, FAILURE_ERR(errors.New("failed to accept command")), http.StatusInternalServerError)
 	}
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Refuse Command
@@ -162,7 +163,7 @@ func refuseCommandHandler(c *fiber.Ctx) error {
 		return GetApiError(c, FAILURE_ERR(errors.New("failed to refuse command")), http.StatusInternalServerError)
 	}
 
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Find Product
@@ -183,6 +184,10 @@ func findProductHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, NOTFOUND_ERR("nom", nom), http.StatusNotFound)
 	}
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = produits
 	return c.JSON(produits)
 }
 
@@ -204,6 +209,10 @@ func findProductByIDHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, NOTFOUND_ERR("id", id), http.StatusNotFound)
 	}
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = prod
 	return c.JSON(prod)
 }
 
@@ -237,5 +246,5 @@ func updateProductHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }

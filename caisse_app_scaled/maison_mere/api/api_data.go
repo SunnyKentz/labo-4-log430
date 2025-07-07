@@ -55,7 +55,7 @@ func newDataApi() *fiber.App {
 	api.Post("/transactions", createTransactionHandler)
 	api.Delete("/transactions/:id", deleteTransactionHandler)
 	api.Get("/magasins", cacheMiddleware, authMiddleWare, getMagasinsHandler)
-	api.Get("/analytics/:mag", cacheMiddleware, authMiddleWare, getAnalyticsHandler)
+	api.Get("/analytics/:mag", authMiddleWare, getAnalyticsHandler)
 	api.Get("/raport", cacheMiddleware, authMiddleWare, getRaportHandler)
 	api.Get("/produits/:nom", cacheMiddleware, authMiddleWare, findProductHandler)
 	api.Put("/produit", authMiddleWare, updateProductHandler)
@@ -109,7 +109,7 @@ func loginHandler(c *fiber.Ctx) error {
 	if !mere.Login(employe, role) {
 		return GetApiError(c, "failed to auth "+employe+" role:"+role, http.StatusUnauthorized)
 	}
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Notify
@@ -130,7 +130,7 @@ func notifyHandler(c *fiber.Ctx) error {
 	println(b.Message)
 	mere.Notifications = append([]string{b.Message}, mere.Notifications...) //enqueue
 
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Subscribe
@@ -152,7 +152,7 @@ func subscribeHandler(c *fiber.Ctx) error {
 		mere.Magasins = append(mere.Magasins, b.Host)
 	}
 
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Get Alerts
@@ -180,6 +180,10 @@ func alertsHandler(c *fiber.Ctx) error {
 // @Router /api/v1/transactions [get]
 func getTransactionsHandler(c *fiber.Ctx) error {
 	if transactions := mere.AfficherTransactions(); transactions != nil {
+		path := c.Method() + " " + c.Path()
+		now := time.Now()
+		cache["t - "+path] = now
+		cache[path] = transactions
 		return c.JSON(transactions)
 	}
 	logger.Error("transactions is nil")
@@ -205,7 +209,10 @@ func getTransactionByIDHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, NOTFOUND_ERR("id", id), http.StatusNotFound)
 	}
-
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = transaction
 	return c.JSON(transaction)
 }
 
@@ -248,7 +255,7 @@ func deleteTransactionHandler(c *fiber.Ctx) error {
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
 
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Get Magasins
@@ -260,7 +267,10 @@ func deleteTransactionHandler(c *fiber.Ctx) error {
 // @Router /api/v1/magasins [get]
 func getMagasinsHandler(c *fiber.Ctx) error {
 	magasins := mere.AfficherTousLesMagasins()
-
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = magasins
 	return c.JSON(magasins)
 }
 
@@ -328,6 +338,10 @@ func getRaportHandler(c *fiber.Ctx) error {
 			Stock5:  stock5,
 		})
 	}
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = datas
 	return c.JSON(datas)
 }
 
@@ -350,6 +364,10 @@ func findProductHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, NOTFOUND_ERR("nom", nom), http.StatusNotFound)
 	}
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = produits
 	return c.JSON(produits)
 }
 
@@ -379,5 +397,5 @@ func updateProductHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }

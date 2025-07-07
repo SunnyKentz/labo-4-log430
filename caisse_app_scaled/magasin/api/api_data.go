@@ -3,6 +3,7 @@ package api
 import (
 	"caisse-app-scaled/caisse_app_scaled/magasin/caissier"
 	. "caisse-app-scaled/caisse_app_scaled/utils"
+	"time"
 
 	_ "caisse-app-scaled/docs/swagger/magasin"
 	"errors"
@@ -107,7 +108,10 @@ func getProductsHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
-
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = produits
 	return c.JSON(produits)
 }
 
@@ -132,6 +136,10 @@ func findProductHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, NOTFOUND_ERR("nom", nom), http.StatusNotFound)
 	}
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = produits
 	return c.JSON(produits)
 }
 
@@ -158,7 +166,7 @@ func addToCartHandler(c *fiber.Ctx) error {
 		return GetApiError(c, NOTFOUND_ERR("id", id), http.StatusNotFound)
 	}
 
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Get Cart Items
@@ -198,7 +206,7 @@ func removeFromCartHandler(c *fiber.Ctx) error {
 	}
 	caissier.RetirerDeLaCart(id)
 
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Make a Sale
@@ -218,7 +226,7 @@ func makeSaleHandler(c *fiber.Ctx) error {
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
 
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Get Transactions
@@ -236,6 +244,10 @@ func getTransactionsHandler(c *fiber.Ctx) error {
 	if transactions == nil {
 		return GetApiError(c, FAILURE_ERR(errors.New("transaction list was null")), http.StatusInternalServerError)
 	}
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+	cache["t - "+path] = now
+	cache[path] = transactions
 	return c.JSON(transactions)
 }
 
@@ -262,7 +274,7 @@ func refundTransactionHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, NOTFOUND_ERR("id", id), http.StatusNotFound)
 	}
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Request Restock
@@ -283,7 +295,7 @@ func requestRestockHandler(c *fiber.Ctx) error {
 		return GetApiError(c, SYNTAX_ERR("id", idParam), http.StatusBadRequest)
 	}
 	caissier.DemmandeReapprovisionner(id)
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Update Product
@@ -317,7 +329,7 @@ func updateProductHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }
 
 // @Summary Restock Product
@@ -345,5 +357,5 @@ func restockProductHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return GetApiError(c, FAILURE_ERR(err), http.StatusInternalServerError)
 	}
-	return GetApiSuccess(c, 200)
+	return GetApiSuccess(cache, c, 200)
 }

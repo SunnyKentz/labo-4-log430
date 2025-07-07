@@ -66,7 +66,6 @@ func authMiddleWare(c *fiber.Ctx) error {
 }
 
 var cache = make(map[string]any)
-var cacheTime = make(map[string]time.Time)
 
 func cacheMiddleware(c *fiber.Ctx) error {
 	noCache := c.Get("no-cache", "false")
@@ -77,8 +76,8 @@ func cacheMiddleware(c *fiber.Ctx) error {
 	now := time.Now()
 
 	// Check if we have a cached value and it's not older than 30 seconds
-	if t, ok := cacheTime["t - "+path]; ok {
-		if now.Sub(t) < 30*time.Second {
+	if t, ok := cache["t - "+path]; ok {
+		if now.Sub(t.(time.Time)) < 30*time.Second {
 			if val, ok := cache[path]; ok {
 				return c.JSON(val)
 			}
