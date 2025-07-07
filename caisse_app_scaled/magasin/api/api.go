@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -73,4 +74,30 @@ func authMiddleWare(c *fiber.Ctx) error {
 		return c.Redirect("/")
 	}
 	return c.Next()
+}
+
+var cache = make(map[string]any)
+var cacheTime = make(map[string]time.Time)
+
+func cacheMiddleware(c *fiber.Ctx) error {
+	noCache := c.Get("no-cache", "false")
+	if noCache != "false" {
+		return c.Next()
+	}
+	path := c.Method() + " " + c.Path()
+	now := time.Now()
+
+	// Check if we have a cached value and it's not older than 30 seconds
+	if t, ok := cacheTime["t - "+path]; ok {
+		if now.Sub(t) < 30*time.Second {
+			if val, ok := cache[path]; ok {
+				return c.JSON(val)
+			}
+		}
+	}
+	err := c.Next()
+	if err != nil {
+		return err
+	}
+	return nil
 }

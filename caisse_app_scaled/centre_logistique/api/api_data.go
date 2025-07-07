@@ -40,8 +40,8 @@ func newDataApi() *fiber.App {
 	api.Post("/commande/:magasin/:id", createCommandHandler)
 	api.Put("/commande/:id", authMiddleWare, acceptCommandHandler)
 	api.Delete("/commande/:id", authMiddleWare, refuseCommandHandler)
-	api.Get("/produits/:nom", findProductHandler)
-	api.Get("/produits/id/:id", findProductByIDHandler)
+	api.Get("/produits/:nom", cacheMiddleware, findProductHandler)
+	api.Get("/produits/id/:id", cacheMiddleware, findProductByIDHandler)
 	api.Put("/produit/:id", updateProductHandler)
 
 	return api

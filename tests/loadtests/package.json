@@ -3,6 +3,7 @@
     "start":"node test.js 1",
     "15":"node test.js 15",
     "30":"node test.js 30",
+    "19":"node test.js 19",
     "upd":"node miseAJour.js",
     "rapport":"node raport.js"
   },

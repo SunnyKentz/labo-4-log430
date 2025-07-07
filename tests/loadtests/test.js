@@ -16,10 +16,10 @@ function main() {
 async function loadTestConsultation(requestsPerSecond) {
     // Consultation simultanée des stocks de plusieurs magasins.
     let initial = requestsPerSecond
-    let token = await loginAndGetToken('http://localhost/magasin/api/v1/login', magasin, caisse)
+    let token = await loginAndGetToken('http://localhost:55383/magasin/api/v1/login', magasin, caisse)
     setInterval(() => {
         while (requestsPerSecond > 0) {
-            fetch('http://localhost/magasin/api/v1/produits', {
+            fetch('http://localhost:55383/magasin/api/v1/produits', {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}`, 'C-Mag': magasin, 'C-Caisse': caisse }
             })
@@ -31,11 +31,11 @@ async function loadTestConsultation(requestsPerSecond) {
 
 async function loadTestRapport(requestsPerSecond) {
     //  Génération de rapports consolidés.
-    let token = await loginAndGetToken('http://localhost/mere/api/v1/merelogin', magasin, caisse)
+    let token = await loginAndGetToken('http://localhost:55383/mere/api/v1/merelogin', magasin, caisse)
     let initial = requestsPerSecond
     setInterval(() => {
         while (requestsPerSecond > 0) {
-            fetch('http://localhost/mere/api/v1/raport', {
+            fetch('http://localhost:55383/mere/api/v1/raport', {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
             })
@@ -47,7 +47,7 @@ async function loadTestRapport(requestsPerSecond) {
 
 async function loadTestMiseAJour(requestsPerSecond) {
     //  Mise à jour de produits à forte fréquence. 
-    let token = await loginAndGetToken('http://localhost/mere/api/v1/merelogin', magasin, caisse)
+    let token = await loginAndGetToken('http://localhost:55383/mere/api/v1/merelogin', magasin, caisse)
     let initial = requestsPerSecond
     const productData = {
         productId: 5,
@@ -57,7 +57,7 @@ async function loadTestMiseAJour(requestsPerSecond) {
     };
     setInterval(() => {
         while (requestsPerSecond > 0) {
-            fetch('http://localhost/mere/api/v1/produit', {
+            fetch('http://localhost:55383/mere/api/v1/produit', {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}`,"Content-Type": "application/json" },
                 body: JSON.stringify(productData),
