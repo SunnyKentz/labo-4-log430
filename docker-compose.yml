@@ -123,18 +123,24 @@ services:
     labels:
       - traefik.enable=false
 
-  # dbtest:
-  #   image: postgres:15
-  #   container_name: caisse_db_test
-  #   environment:
-  #     - POSTGRES_USER=test_user
-  #     - POSTGRES_PASSWORD=test_password
-  #     - POSTGRES_DB=postgres
-  #   ports:
-  #     - "5435:5432"
-  #   volumes:
-  #     - postgres_data_test:/var/lib/postgresql/data
-  #     - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
+  dbtest:
+    image: postgres:15
+    container_name: caisse_db_test
+    environment:
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_password
+      - POSTGRES_DB=postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+      - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # wokflowTest:
+  #   build:
+  #     context: .
+  #     dockerfile: ./.github/workflows/Dockerfile
+  #   image: ${USERNAME}/test-workflow:latest
   
 volumes:
   postgres_data_magasin:

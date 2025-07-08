@@ -21,14 +21,17 @@ buildMagasin:
 	rm -rf out/magasin/
 	go build -o out/magasin/ ./caisse_app_scaled/magasin/app.go
 	cp -rf caisse_app_scaled/magasin/view out/magasin/
+	cp -rf caisse_app_scaled/commonjs out/maison_mere/commonjs/
 buildLogistique:
 	rm -rf out/centre_logistique/
 	go build -o out/centre_logistique/ ./caisse_app_scaled/centre_logistique/app.go
 	cp -rf caisse_app_scaled/centre_logistique/view out/centre_logistique/
+	cp -rf caisse_app_scaled/commonjs out/maison_mere/commonjs/
 buildMere:
 	rm -rf out/maison_mere/
 	go build -o out/maison_mere/ ./caisse_app_scaled/maison_mere/app.go
 	cp -rf caisse_app_scaled/maison_mere/view out/maison_mere/
+	cp -rf caisse_app_scaled/commonjs out/maison_mere/commonjs/
 
 runMagasin:
 	$(MAKE) buildMagasin
@@ -75,6 +78,7 @@ dev-setup:
 	$(MAKE) docs
 
 comment-swagger:
+	$(MAKE) unComment-swagger
 # ubuntu
 	find caisse_app_scaled -type f -exec sed -i 's|^\(\s*_ "caisse-app-scaled/docs/swagger/[^"]*"\)|// \1|' {} + ||true
 # mac

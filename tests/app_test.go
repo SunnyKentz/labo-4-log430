@@ -27,6 +27,7 @@ func BeforeAll() {
 	os.Setenv("DB_USER", "test_user")
 	os.Setenv("DB_PORT", "5435")
 	os.Setenv("GATEWAY", "localhost")
+	os.Setenv("ENVTEST", "TRUE")
 	ConnectDB()
 	go MERE.NewApp()
 	go MAG.NewApp()
@@ -34,10 +35,9 @@ func BeforeAll() {
 	time.Sleep(time.Second * 2) // time for goroutine to startup
 
 	// Login to get tokens
-	mereToken = login("maison_mere", "http://mere.localhost")
-	magToken = login("magasin", "http://magasin.localhost")
-	logisToken = login("logistique", "http://logistique.localhost")
-
+	mereToken = login("maison_mere", "http://localhost:8090/mere")
+	magToken = login("magasin", "http://localhost:8080/magasin")
+	logisToken = login("logistique", "http://localhost:8091/logistique")
 }
 
 func login(service, baseURL string) string {
@@ -58,9 +58,11 @@ func login(service, baseURL string) string {
 		fmt.Println(service + " failed logged in")
 		return ""
 	}
-	resp, err := http.Post(baseURL+"/api/v1/login", "application/json", bytes.NewBuffer(jsonData))
+	var resp *http.Response
 	if service == "maison_mere" {
 		resp, err = http.Post(baseURL+"/api/v1/merelogin", "application/json", bytes.NewBuffer(jsonData))
+	} else {
+		resp, err = http.Post(baseURL+"/api/v1/login", "application/json", bytes.NewBuffer(jsonData))
 	}
 	if err != nil {
 		return ""
@@ -107,7 +109,7 @@ func TestMagasinUpdateProduit(t *testing.T) {
 	}
 
 	jsonData, _ := json.Marshal(updateData)
-	req, _ := http.NewRequest("PUT", "http://magasin.localhost/api/v1/produit/1", bytes.NewBuffer(jsonData))
+	req, _ := http.NewRequest("PUT", "http://localhost:8080/magasin/api/v1/produit/1", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("no-cache", "true")
 
@@ -120,7 +122,7 @@ func TestMagasinUpdateProduit(t *testing.T) {
 }
 
 func TestMagasinProduits(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://magasin.localhost/api/v1/produits", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8080/magasin/api/v1/produits", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -136,7 +138,7 @@ func TestMagasinProduits(t *testing.T) {
 }
 
 func TestMagasinProduitsSearch(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://magasin.localhost/api/v1/produits/t", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8080/magasin/api/v1/produits/t", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -153,7 +155,7 @@ func TestMagasinProduitsSearch(t *testing.T) {
 
 func TestMagasinCart(t *testing.T) {
 	// Test get cart
-	req, _ := http.NewRequest("GET", "http://magasin.localhost/api/v1/cart", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8080/magasin/api/v1/cart", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -169,7 +171,7 @@ func TestMagasinCart(t *testing.T) {
 }
 
 func TestMagasinAddToCart(t *testing.T) {
-	req, _ := http.NewRequest("POST", "http://magasin.localhost/api/v1/cart/1", nil)
+	req, _ := http.NewRequest("POST", "http://localhost:8080/magasin/api/v1/cart/1", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -184,7 +186,7 @@ func TestMagasinAddToCart(t *testing.T) {
 }
 
 func TestMagasinRemoveFromCart(t *testing.T) {
-	req, _ := http.NewRequest("DELETE", "http://magasin.localhost/api/v1/cart/1", nil)
+	req, _ := http.NewRequest("DELETE", "http://localhost:8080/magasin/api/v1/cart/1", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -200,7 +202,7 @@ func TestMagasinRemoveFromCart(t *testing.T) {
 }
 
 func TestMagasinVendre(t *testing.T) {
-	req, _ := http.NewRequest("POST", "http://magasin.localhost/api/v1/vendre", nil)
+	req, _ := http.NewRequest("POST", "http://localhost:8080/magasin/api/v1/vendre", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -215,7 +217,7 @@ func TestMagasinVendre(t *testing.T) {
 }
 
 func TestMagasinTransactions(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://magasin.localhost/api/v1/transactions", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8080/magasin/api/v1/transactions", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -231,7 +233,7 @@ func TestMagasinTransactions(t *testing.T) {
 }
 
 func TestMagasinRembourser(t *testing.T) {
-	req, _ := http.NewRequest("POST", "http://magasin.localhost/api/v1/rembourser/1", nil)
+	req, _ := http.NewRequest("POST", "http://localhost:8080/magasin/api/v1/rembourser/1", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -246,7 +248,7 @@ func TestMagasinRembourser(t *testing.T) {
 }
 
 func TestMagasinCommande(t *testing.T) {
-	req, _ := http.NewRequest("POST", "http://magasin.localhost/api/v1/produit/1", nil)
+	req, _ := http.NewRequest("POST", "http://localhost:8080/magasin/api/v1/produit/1", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -262,7 +264,7 @@ func TestMagasinCommande(t *testing.T) {
 }
 
 func TestMagasinReapprovisionner(t *testing.T) {
-	req, _ := http.NewRequest("PUT", "http://magasin.localhost/api/v1/produit/1/10", nil)
+	req, _ := http.NewRequest("PUT", "http://localhost:8080/magasin/api/v1/produit/1/10", nil)
 	req.Header.Set("no-cache", "true")
 
 	resp, err := httpClient.Do(req)
@@ -282,7 +284,7 @@ func TestMereNotify(t *testing.T) {
 	}
 
 	jsonData, _ := json.Marshal(notifyData)
-	req, _ := http.NewRequest("POST", "http://mere.localhost/api/v1/notify", bytes.NewBuffer(jsonData))
+	req, _ := http.NewRequest("POST", "http://localhost:8090/mere/api/v1/notify", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("no-cache", "true")
 	resp, err := httpClient.Do(req)
@@ -296,11 +298,11 @@ func TestMereNotify(t *testing.T) {
 
 func TestMereSubscribe(t *testing.T) {
 	subscribeData := map[string]string{
-		"host": "http://magasin.localhost",
+		"host": "http://localhost:8080/magasin",
 	}
 
 	jsonData, _ := json.Marshal(subscribeData)
-	req, _ := http.NewRequest("POST", "http://mere.localhost/api/v1/subscribe", bytes.NewBuffer(jsonData))
+	req, _ := http.NewRequest("POST", "http://localhost:8090/mere/api/v1/subscribe", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("no-cache", "true")
 	resp, err := httpClient.Do(req)
@@ -313,7 +315,7 @@ func TestMereSubscribe(t *testing.T) {
 }
 
 func TestMereAlerts(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://mere.localhost/api/v1/alerts", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8090/mere/api/v1/alerts", nil)
 	req.Header.Set("Authorization", "Bearer "+mereToken)
 	req.Header.Set("no-cache", "true")
 
@@ -327,7 +329,7 @@ func TestMereAlerts(t *testing.T) {
 }
 
 func TestMereTransactions(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://mere.localhost/api/v1/transactions", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8090/mere/api/v1/transactions", nil)
 	req.Header.Set("no-cache", "true")
 	resp, err := httpClient.Do(req)
 	errnotnil("Mere transactions", t, err)
@@ -339,7 +341,7 @@ func TestMereTransactions(t *testing.T) {
 }
 
 func TestMereTransactionById(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://mere.localhost/api/v1/transactions/1", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8090/mere/api/v1/transactions/1", nil)
 	req.Header.Set("no-cache", "true")
 	resp, err := httpClient.Do(req)
 	errnotnil("Mere transaction by id", t, err)
@@ -359,7 +361,7 @@ func TestMereCreateTransaction(t *testing.T) {
 	}
 
 	jsonData, _ := json.Marshal(transactionData)
-	req, _ := http.NewRequest("POST", "http://mere.localhost/api/v1/transactions", bytes.NewBuffer(jsonData))
+	req, _ := http.NewRequest("POST", "http://localhost:8090/mere/api/v1/transactions", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("no-cache", "true")
 	resp, err := httpClient.Do(req)
@@ -371,7 +373,7 @@ func TestMereCreateTransaction(t *testing.T) {
 }
 
 func TestMereDeleteTransaction(t *testing.T) {
-	req, _ := http.NewRequest("DELETE", "http://mere.localhost/api/v1/transactions/1", nil)
+	req, _ := http.NewRequest("DELETE", "http://localhost:8090/mere/api/v1/transactions/1", nil)
 	req.Header.Set("no-cache", "true")
 
 	resp, err := httpClient.Do(req)
@@ -383,7 +385,7 @@ func TestMereDeleteTransaction(t *testing.T) {
 }
 
 func TestMereMagasins(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://mere.localhost/api/v1/magasins", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8090/mere/api/v1/magasins", nil)
 	req.Header.Set("Authorization", "Bearer "+mereToken)
 	req.Header.Set("no-cache", "true")
 
@@ -397,7 +399,7 @@ func TestMereMagasins(t *testing.T) {
 }
 
 func TestMereAnalytics(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://mere.localhost/api/v1/analytics/tout", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8090/mere/api/v1/analytics/tout", nil)
 	req.Header.Set("Authorization", "Bearer "+mereToken)
 	req.Header.Set("no-cache", "true")
 
@@ -411,7 +413,7 @@ func TestMereAnalytics(t *testing.T) {
 }
 
 func TestMereRaport(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://mere.localhost/api/v1/raport", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8090/mere/api/v1/raport", nil)
 	req.Header.Set("Authorization", "Bearer "+mereToken)
 	req.Header.Set("no-cache", "true")
 
@@ -425,7 +427,7 @@ func TestMereRaport(t *testing.T) {
 }
 
 func TestMereProduitsSearch(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://mere.localhost/api/v1/produits/test", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8090/mere/api/v1/produits/test", nil)
 	req.Header.Set("Authorization", "Bearer "+mereToken)
 	req.Header.Set("no-cache", "true")
 
@@ -447,7 +449,7 @@ func TestMereUpdateProduit(t *testing.T) {
 	}
 
 	jsonData, _ := json.Marshal(updateData)
-	req, _ := http.NewRequest("PUT", "http://mere.localhost/api/v1/produit", bytes.NewBuffer(jsonData))
+	req, _ := http.NewRequest("PUT", "http://localhost:8090/mere/api/v1/produit", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+mereToken)
 	req.Header.Set("no-cache", "true")
@@ -462,7 +464,7 @@ func TestMereUpdateProduit(t *testing.T) {
 
 // ==================== LOGISTICS API TESTS ====================
 func TestLogisCommands(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://logistique.localhost/api/v1/commands", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8091/logistique/api/v1/commands", nil)
 	req.Header.Set("Authorization", "Bearer "+logisToken)
 	req.Header.Set("no-cache", "true")
 
@@ -476,7 +478,7 @@ func TestLogisCommands(t *testing.T) {
 }
 
 func TestLogisAcceptCommande(t *testing.T) {
-	req, _ := http.NewRequest("PUT", "http://logistique.localhost/api/v1/commande/1", nil)
+	req, _ := http.NewRequest("PUT", "http://localhost:8091/logistique/api/v1/commande/1", nil)
 	req.Header.Set("Authorization", "Bearer "+logisToken)
 	req.Header.Set("no-cache", "true")
 
@@ -489,7 +491,7 @@ func TestLogisAcceptCommande(t *testing.T) {
 }
 
 func TestLogisRefuseCommande(t *testing.T) {
-	req, _ := http.NewRequest("DELETE", "http://logistique.localhost/api/v1/commande/1", nil)
+	req, _ := http.NewRequest("DELETE", "http://localhost:8091/logistique/api/v1/commande/1", nil)
 	req.Header.Set("Authorization", "Bearer "+logisToken)
 	req.Header.Set("no-cache", "true")
 
@@ -502,7 +504,7 @@ func TestLogisRefuseCommande(t *testing.T) {
 }
 
 func TestLogisProduitsSearch(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://logistique.localhost/api/v1/produits/t", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8091/logistique/api/v1/produits/t", nil)
 	req.Header.Set("no-cache", "true")
 	resp, err := httpClient.Do(req)
 	errnotnil("Logis produits search", t, err)
@@ -514,7 +516,7 @@ func TestLogisProduitsSearch(t *testing.T) {
 }
 
 func TestLogisProduitById(t *testing.T) {
-	req, _ := http.NewRequest("GET", "http://logistique.localhost/api/v1/produits/id/1", nil)
+	req, _ := http.NewRequest("GET", "http://localhost:8091/logistique/api/v1/produits/id/1", nil)
 	req.Header.Set("no-cache", "true")
 	resp, err := httpClient.Do(req)
 	errnotnil("Logis produit by id", t, err)
@@ -532,7 +534,7 @@ func TestLogisUpdateProduit(t *testing.T) {
 	}
 
 	jsonData, _ := json.Marshal(updateData)
-	req, _ := http.NewRequest("PUT", "http://logistique.localhost/api/v1/produit/1", bytes.NewBuffer(jsonData))
+	req, _ := http.NewRequest("PUT", "http://localhost:8091/logistique/api/v1/produit/1", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("no-cache", "true")
 
@@ -550,7 +552,7 @@ func TestCompleteWorkflow(t *testing.T) {
 	t.Log("Testing complete workflow...")
 
 	// 1. Add product to cart
-	req, _ := http.NewRequest("POST", "http://magasin.localhost/api/v1/cart/1", nil)
+	req, _ := http.NewRequest("POST", "http://localhost:8080/magasin/api/v1/cart/1", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -562,7 +564,7 @@ func TestCompleteWorkflow(t *testing.T) {
 	}
 
 	// 2. Complete sale
-	req, _ = http.NewRequest("POST", "http://magasin.localhost/api/v1/vendre", nil)
+	req, _ = http.NewRequest("POST", "http://localhost:8080/magasin/api/v1/vendre", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -574,7 +576,7 @@ func TestCompleteWorkflow(t *testing.T) {
 	}
 
 	// 3. Request reapprovisionment
-	req, _ = http.NewRequest("POST", "http://magasin.localhost/api/v1/produit/1", nil)
+	req, _ = http.NewRequest("POST", "http://localhost:8080/magasin/api/v1/produit/1", nil)
 	req.Header.Set("Authorization", "Bearer "+magToken)
 	req.Header.Set("C-Caisse", "Caisse 1")
 	req.Header.Set("C-Mag", "Magasin 1")
@@ -588,7 +590,7 @@ func TestCompleteWorkflow(t *testing.T) {
 	// 4. Create logistics command
 	commandeData := map[string]string{"host": "test-host"}
 	jsonData, _ := json.Marshal(commandeData)
-	req, _ = http.NewRequest("POST", "http://logistique.localhost/api/v1/commande/Magasin%201/1", bytes.NewBuffer(jsonData))
+	req, _ = http.NewRequest("POST", "http://localhost:8091/logistique/api/v1/commande/Magasin%201/1", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("no-cache", "true")
 	resp, err = httpClient.Do(req)

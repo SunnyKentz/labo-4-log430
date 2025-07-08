@@ -119,8 +119,16 @@ Je valide le cache tant que c'est à l'intérieur de 30 sec
 `time.Now() - cache["time - api/v1/raport"] > 30 sec`
 
 #### Répétez les tests de charge et comparez les performances :
+
+Ici nous pouvons voir que le système peut supporter facilement 30 req/s avant la connection ssh tombais.
+
+![ScreenShot Grafana](./imgs/cache1.png)
+
+Ici, nous pouvons voir que les erreurs commence à apparaitre à 70 req/s
+
+![ScreenShot Grafana](./imgs/cache2.png)
 - Réduction de la latence des endpoints mis en cache ?
-    - Il y a une grande réduction de la latence. nous pouvons même atteindre 100 req/s avec le cache.
+    - Il y a une grande réduction de la latence. nous pouvons même atteindre 70 req/s avec le cache.
 - Diminution de la charge sur la base de données ?
     - Essentiellement, avec un cache de 30 secondes la base de données est sollicitée 2 fois par seconde. ce qui est un développement pour la latence
 - Évolution de la saturation ? 
@@ -128,3 +136,4 @@ Je valide le cache tant que c'est à l'intérieur de 30 sec
 
 #### Consignez les gains observés et toute limitation
 - la limitation principale est que les changements dans les bases de données ne se voient que après 30 secondes.
+- Nous avons eu un gain 2x de support de requêques par secondes
