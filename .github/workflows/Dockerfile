@@ -8,6 +8,6 @@ RUN apt-get install -y ca-certificates
 COPY . .
 
 RUN go mod tidy
-RUN find caisse_app_scaled -type f -exec sed -i 's|^\(\s*_ "caisse-app-scaled/docs/swagger/logistique"\)|// \1|' {} +
+RUN find caisse_app_scaled -type f -exec sed -i 's|^\(\s*_ "caisse-app-scaled/docs/swagger/[^"]*"\)|// \1|' {} + ||true
 
 CMD ["go", "test", "./..."]

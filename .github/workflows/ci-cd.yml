@@ -30,13 +30,12 @@ jobs:
 
       - name: Run linter
         run: |
-          find caisse_app_scaled -type f -exec sed -i 's|^// \(\s*_ "caisse-app-scaled/docs/swagger/logistique"\)|\1|' {} +
+          find caisse_app_scaled -type f -exec sed -i 's|^\(\s*_ "caisse-app-scaled/docs/swagger/[^"]*"\)|// \1|' {} + ||true
           golangci-lint run ./...
-          find caisse_app_scaled -type f -exec sed -i 's|^\(\s*_ "caisse-app-scaled/docs/swagger/logistique"\)|// \1|' {} +
-
+          find caisse_app_scaled -type f -exec sed -i 's|^// \(\s*_ "caisse-app-scaled/docs/swagger/[^"]*"\)|\1|' {} + ||true
   test:
     runs-on: ubuntu-latest
-    services:
+    services:1
       postgres:
         image: postgres:15
         env:
@@ -63,9 +62,9 @@ jobs:
 
       - name: Run tests
         run: |
-          find caisse_app_scaled -type f -exec sed -i 's|^// \(\s*_ "caisse-app-scaled/docs/swagger/logistique"\)|\1|' {} +
+          find caisse_app_scaled -type f -exec sed -i 's|^\(\s*_ "caisse-app-scaled/docs/swagger/[^"]*"\)|// \1|' {} + ||true
           go test -v ./tests/...
-          find caisse_app_scaled -type f -exec sed -i 's|^\(\s*_ "caisse-app-scaled/docs/swagger/logistique"\)|// \1|' {} +
+          find caisse_app_scaled -type f -exec sed -i 's|^// \(\s*_ "caisse-app-scaled/docs/swagger/[^"]*"\)|\1|' {} + ||true
 
   build-and-push:
     needs: [test, lint]
