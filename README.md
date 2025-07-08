@@ -31,7 +31,6 @@ L'application inclut maintenant des métriques Prometheus pour le monitoring de 
 
 ### Comment run :
 ```
-    make dev-setup
     make run
 ```
 

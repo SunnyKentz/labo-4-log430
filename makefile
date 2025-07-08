@@ -61,6 +61,7 @@ test:
 
 docs: .FORCE
 	go get github.com/swaggo/swag/cmd/swag@latest
+	$(MAKE) unComment-swagger
 	cd caisse_app_scaled && go run github.com/swaggo/swag/cmd/swag init -d magasin,models,utils -o ../docs/swagger/magasin -g api/api_data.go
 	cd caisse_app_scaled && go run github.com/swaggo/swag/cmd/swag init -d centre_logistique,models,utils -o ../docs/swagger/logistique -g api/api_data.go
 	cd caisse_app_scaled && go run github.com/swaggo/swag/cmd/swag init -d maison_mere,models,utils -o ../docs/swagger/mere -g api/api_data.go
